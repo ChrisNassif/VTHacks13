@@ -13,7 +13,9 @@
 char current_button_states[4] = {};
 
 
-unsigned long CONTROLLER_BUTTON_TYPES[] = {
+// these are the possible buttons types that the controller can output depending on the bits that are sent to this driver from the UART connection
+// for the 32 bit value that the controller sends us, the i'th bit being 1 means that the i'th element of this array is currently being pressed   
+unsigned long CONTROLLER_BUTTON_TYPES[32] = {
     KEY_A,
     KEY_B,
     KEY_C,
