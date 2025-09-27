@@ -7,9 +7,45 @@
 #include <iostream>
 #include <stdexcept>
 
-// Configure the UART (ttyUSB0)
-int setup_uart(const char* device) {
-    int fd = open(device, O_RDWR | O_NOCTTY | O_NONBLOCK);
+
+
+// stores all of the current
+char current_button_states[4] = {};
+
+
+unsigned long CONTROLLER_BUTTON_TYPES[] = {
+    KEY_A,
+    KEY_B,
+    KEY_C,
+    KEY_D,
+    KEY_E,
+    KEY_F,
+    KEY_G,
+    KEY_H,
+    KEY_I,
+    KEY_J,
+    KEY_K,
+    KEY_L,
+    KEY_M,
+    KEY_N,
+    KEY_O,
+    KEY_P,
+    KEY_Q,
+    KEY_R,
+    KEY_S,
+    KEY_T,
+    BTN_X,
+    BTN_A,
+    BTN_B,
+    BTN_C,
+};
+int NUMBER_OF_CONTROLLER_BUTTON_TYPES = sizeof(CONTROLLER_BUTTON_TYPES) / sizeof(unsigned long);
+
+
+
+
+int setup_uart(const char* get_device_file_path) {
+    int fd = open(get_device_file_path, O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fd < 0) throw std::runtime_error("Failed to open UART");
 
     struct termios tty;
@@ -42,43 +78,20 @@ int setup_uinput() {
     if (fd < 0) throw std::runtime_error("Failed to open /dev/uinput");
 
     ioctl(fd, UI_SET_EVBIT, EV_KEY);
-    ioctl(fd, UI_SET_KEYBIT, KEY_Q);
-    ioctl(fd, UI_SET_KEYBIT, BTN_B);
-    ioctl(fd, UI_SET_KEYBIT, BTN_X);
-    ioctl(fd, UI_SET_KEYBIT, BTN_Y);
-    ioctl(fd, UI_SET_KEYBIT, BTN_START);
-    ioctl(fd, UI_SET_KEYBIT, BTN_SELECT);
-    ioctl(fd, UI_SET_KEYBIT, BTN_TL);  // L1
-    ioctl(fd, UI_SET_KEYBIT, BTN_TR);  // R1
-    ioctl(fd, UI_SET_KEYBIT, BTN_THUMBL);
-    ioctl(fd, UI_SET_KEYBIT, BTN_THUMBR);
-    ioctl(fd, UI_SET_KEYBIT, BTN_DPAD_UP);
-    ioctl(fd, UI_SET_KEYBIT, BTN_DPAD_DOWN);
-    ioctl(fd, UI_SET_KEYBIT, BTN_DPAD_LEFT);
-    ioctl(fd, UI_SET_KEYBIT, BTN_DPAD_RIGHT);
-
-    // Axes
-    ioctl(fd, UI_SET_EVBIT, EV_ABS);
-    ioctl(fd, UI_SET_ABSBIT, ABS_X);
-    ioctl(fd, UI_SET_ABSBIT, ABS_Y);
-    ioctl(fd, UI_SET_ABSBIT, ABS_RX);
-    ioctl(fd, UI_SET_ABSBIT, ABS_RY);
-
-    struct uinput_abs_setup abs_setup {};
-    abs_setup.absinfo.minimum = -32768;
-    abs_setup.absinfo.maximum = 32767;
-
-    abs_setup.code = ABS_X; ioctl(fd, UI_ABS_SETUP, &abs_setup);
-    abs_setup.code = ABS_Y; ioctl(fd, UI_ABS_SETUP, &abs_setup);
-    abs_setup.code = ABS_RX; ioctl(fd, UI_ABS_SETUP, &abs_setup);
-    abs_setup.code = ABS_RY; ioctl(fd, UI_ABS_SETUP, &abs_setup);
+    
+    // add all of the controller buttons as potential uinput buttons
+    for (int i = 0; i < NUMBER_OF_CONTROLLER_BUTTON_TYPES; i++) {
+        ioctl(fd, UI_SET_KEYBIT, CONTROLLER_BUTTON_TYPES[i]);
+    }
 
     // Device info
     struct uinput_setup usetup;
     memset(&usetup, 0, sizeof(usetup));
+
+    // Microsoft Xbox 360 Controller 
     usetup.id.bustype = BUS_USB;
-    usetup.id.vendor  = 0x045e;   // Microsoft
-    usetup.id.product = 0x028e;   // Xbox 360 Controller
+    usetup.id.vendor  = 0x045e;   
+    usetup.id.product = 0x028e;
     strcpy(usetup.name, "F0XX Controller");
 
     ioctl(fd, UI_DEV_SETUP, &usetup);
@@ -86,6 +99,11 @@ int setup_uinput() {
 
     return fd;
 }
+
+
+
+
+
 
 // Send input event
 void send_event(int ufd, unsigned short type, unsigned short code, int value) {
@@ -103,71 +121,64 @@ void sync_events(int ufd) {
     send_event(ufd, EV_SYN, SYN_REPORT, 0);
 }
 
+
+
+
+
+
 int main() {
     try {
+        int uart_fd = setup_uart("/dev/F0XX");
         // int uart_fd = setup_uart("/dev/ttyUSB0");
         int uinput_fd = setup_uinput();
 
         int epfd = epoll_create1(0);
-        if (epfd < 0) throw std::runtime_error("epoll_create1 failed");
+
+        if (epfd < 0) {
+            throw std::runtime_error("epoll_create failed");
+        }
 
         struct epoll_event ev;
         ev.events = EPOLLIN;
-        // ev.data.fd = uart_fd;
-        // epoll_ctl(epfd, EPOLL_CTL_ADD, uart_fd, &ev);
+        ev.data.fd = uart_fd;
+        epoll_ctl(epfd, EPOLL_CTL_ADD, uart_fd, &ev);
+
 
         std::cout << "Driver running: press bytes over UART to control gamepad" << std::endl;
 
         while (true) {
             struct epoll_event events[1];
-            // int n = epoll_wait(epfd, events, 1, -1);
-            // if (n > 0 && (events[0].events & EPOLLIN)) {
-            char buf[64];
-            // int len = read(uart_fd, buf, sizeof(buf));
+            int n = epoll_wait(epfd, events, 1, -1);
 
-            int len = 1;
-            buf[0] = 'A';
+            if (!(n > 0 && (events[0].events & EPOLLIN))) break;
             
-            send_event(uinput_fd, EV_KEY, KEY_Q, 1);
-            sync_events(uinput_fd);
-            usleep(50000); // 50ms
-            send_event(uinput_fd, EV_KEY, KEY_Q, 0);
-            sync_events(uinput_fd);
+            char uart_buffer[4];
+            int len = read(uart_fd, uart_buffer, sizeof(uart_buffer));
+            
+            // go through the UART bits and then send a key event if the bit was changed
+            for (int byte_index = 0; byte_index < 4; byte_index++) {
+                char changed_buttons = current_button_states[byte_index] ^ uart_buffer[byte_index];
 
-            usleep(500000);
+                for (int bit_index = 0; bit_index < 8; bit_index++) {
+                    char mask = 1 << bit_index;
+                    
+                    if (changed_buttons & mask) {
+                        std::cout << "bits:" << uart_buffer << std::endl;
 
-        //     for (int i = 0; i < len; i++) {
-        //         if (buf[i] == 'A') {
-        //             send_event(uinput_fd, EV_KEY, KEY_Q, 1);
-        //             sync_events(uinput_fd);
-        //             usleep(50000); // 50ms
-        //             send_event(uinput_fd, EV_KEY, KEY_Q, 0);
-        //             sync_events(uinput_fd);
-
-        //         } 
-                
-        //         else if (buf[i] == 'a') {
-        //             send_event(uinput_fd, EV_KEY, BTN_A, 0);
-        //             sync_events(uinput_fd);
-        //         } 
-                
-        //         else if (buf[i] == 'B') {
-        //             send_event(uinput_fd, EV_KEY, BTN_B, 1);
-        //             sync_events(uinput_fd);
-        //         } 
-                
-        //         else if (buf[i] == 'b') {
-        //             send_event(uinput_fd, EV_KEY, BTN_B, 0);
-        //             sync_events(uinput_fd);
-        //         }
-        //     }
-        //     // }
+                        send_event(uinput_fd, EV_KEY, CONTROLLER_BUTTON_TYPES[byte_index * 8 + bit_index], current_button_states[byte_index] & mask);
+                        sync_events(uinput_fd);
+                    }
+                }
+            }
+            
         }
 
         ioctl(uinput_fd, UI_DEV_DESTROY);
         close(uinput_fd);
-        // close(uart_fd);
-    } catch (std::exception& e) {
+        close(uart_fd);
+    } 
+    
+    catch (std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
