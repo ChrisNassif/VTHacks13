@@ -1,5 +1,6 @@
-sudo echo ACTION=="add", ATTRS{idVendor}=="2E8A", ATTRS{idProduct}=="0005", SYMLINK+="F0XX" > /etc/udev/rules.d/99-F0XX-controller-udev.rules
+sudo chmod 777 /etc/udev/rules.d/99-F0XX-controller-udev.rules
+sudo echo 'ACTION=="add", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", SYMLINK+="F0XX"' > /etc/udev/rules.d/99-F0XX-controller-udev.rules
 sudo udevadm control --reload
 sudo udevadm trigger
 
-sudo apt install linux-headers-$(uname -r)
+# sudo apt install linux-headers-$(uname -r)
