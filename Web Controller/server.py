@@ -1,11 +1,47 @@
 import asyncio
 import websockets
 import json
-import random
+import evdev
 from datetime import datetime
 
 # Store connected clients
 connected_clients = set()
+
+# Map evdev key codes to button names
+KEY_MAP = {
+    evdev.ecodes.KEY_A: 'a',
+    evdev.ecodes.KEY_B: 'b',
+    evdev.ecodes.KEY_C: 'c',
+    evdev.ecodes.KEY_D: 'd',
+    evdev.ecodes.KEY_E: 'e',
+    evdev.ecodes.KEY_F: 'f',
+    evdev.ecodes.KEY_G: 'g',
+    evdev.ecodes.KEY_H: 'h',
+    evdev.ecodes.KEY_I: 'i',
+    evdev.ecodes.KEY_J: 'j',
+    evdev.ecodes.KEY_K: 'k',
+    evdev.ecodes.KEY_L: 'l',
+    evdev.ecodes.KEY_M: 'm',
+    evdev.ecodes.KEY_N: 'n',
+    evdev.ecodes.KEY_O: 'o',
+    evdev.ecodes.KEY_P: 'p',
+    evdev.ecodes.KEY_Q: 'q',
+    evdev.ecodes.KEY_R: 'r',
+    evdev.ecodes.KEY_S: 's',
+    evdev.ecodes.KEY_T: 't',
+    evdev.ecodes.BTN_A: 'a',
+    evdev.ecodes.BTN_B: 'b',
+    evdev.ecodes.BTN_C: 'c',
+    evdev.ecodes.BTN_X: 'x',
+    evdev.ecodes.KEY_0: '0',
+    evdev.ecodes.KEY_1: '1',
+    evdev.ecodes.KEY_2: '2',
+    evdev.ecodes.KEY_3: '3',
+    evdev.ecodes.KEY_4: '4',
+    evdev.ecodes.KEY_5: '5',
+    evdev.ecodes.KEY_6: '6',
+    evdev.ecodes.KEY_7: '7',
+}
 
 async def handle_client(websocket):
     connected_clients.add(websocket)
@@ -35,7 +71,7 @@ async def handle_client(websocket):
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Total clients: {len(connected_clients)}")
 
 
-async def broadcast_button_press(button, pressed=True):
+async def broadcast_button_event(button, pressed):
     if connected_clients:
         message = json.dumps({
             'button': button,
@@ -55,48 +91,65 @@ async def broadcast_button_press(button, pressed=True):
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Broadcast: Button {button.upper()} {state}")
 
 
-async def simulate_button_presses():
-    buttons = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 
-               'n', 'o', 'p', 'q', 'r', 's', 't']
+def find_foxx_controller():
+    """Find the F0XX Controller device"""
+    devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
     
-    print("Waiting 3 seconds before starting simulation...")
-    await asyncio.sleep(3)
+    for device in devices:
+        if device.name == "F0XX Controller":
+            return device
     
-    print("Starting button press simulation...")
-    while True:
-        if connected_clients:
-            button = random.choice(buttons)
-            
-            await broadcast_button_press(button, True)
-            
-            await asyncio.sleep(random.uniform(0.1, 0.5))
-            
-            await broadcast_button_press(button, False)
-            
-            await asyncio.sleep(random.uniform(0.3, 1.5))
-        else:
-            await asyncio.sleep(1)
+    return None
+
+
+async def read_evdev_events():
+    """Read events from evdev and broadcast to WebSocket clients"""
+    print("Looking for F0XX Controller...")
+    
+    device = find_foxx_controller()
+    
+    if device is None:
+        print("ERROR: F0XX Controller not found!")
+        print("Available devices:")
+        for dev in [evdev.InputDevice(path) for path in evdev.list_devices()]:
+            print(f"  - {dev.name}")
+        return
+    
+    print(f"Found F0XX Controller: {device.name}")
+    print(f"Device path: {device.path}")
+    print("Listening for button events...\n")
+    
+    try:
+        async for event in device.async_read_loop():
+            if event.type == evdev.ecodes.EV_KEY:
+                if event.code in KEY_MAP:
+                    button = KEY_MAP[event.code]
+                    pressed = event.value == 1
+                    
+                    await broadcast_button_event(button, pressed)
+    except Exception as e:
+        print(f"Error reading from device: {e}")
 
 
 async def main():
-    """Start the WebSocket server"""
+    """Start the WebSocket server and evdev reader"""
     print("=" * 50)
-    print("Game Controller WebSocket Server")
+    print("Game Controller WebSocket Server (evdev)")
     print("=" * 50)
-    print("Waiting for connections...")
+    print("Starting server on localhost:8080")
     print("\nPress Ctrl+C to stop the server")
-    print("=" * 50)
+    print("=" * 50 + "\n")
     
     # Start the WebSocket server
     async with websockets.serve(handle_client, "localhost", 8080):
-        # Start simulation task
-        simulation_task = asyncio.create_task(simulate_button_presses())
+        # Start evdev reading task
+        evdev_task = asyncio.create_task(read_evdev_events())
         
         try:
             await asyncio.Future()  # Run forever
         except KeyboardInterrupt:
             print("\n\nShutting down server...")
-            simulation_task.cancel()
+            evdev_task.cancel()
 
 
 if __name__ == "__main__":
