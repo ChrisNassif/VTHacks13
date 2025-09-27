@@ -104,31 +104,42 @@ def find_foxx_controller():
 
 async def read_evdev_events():
     """Read events from evdev and broadcast to WebSocket clients"""
-    print("Looking for F0XX Controller...")
-    
-    device = find_foxx_controller()
-    
-    if device is None:
-        print("ERROR: F0XX Controller not found!")
-        print("Available devices:")
-        for dev in [evdev.InputDevice(path) for path in evdev.list_devices()]:
-            print(f"  - {dev.name}")
-        return
-    
-    print(f"Found F0XX Controller: {device.name}")
-    print(f"Device path: {device.path}")
-    print("Listening for button events...\n")
-    
-    try:
-        async for event in device.async_read_loop():
-            if event.type == evdev.ecodes.EV_KEY:
-                if event.code in KEY_MAP:
-                    button = KEY_MAP[event.code]
-                    pressed = event.value == 1
-                    
-                    await broadcast_button_event(button, pressed)
-    except Exception as e:
-        print(f"Error reading from device: {e}")
+    while True:  # Continuous reconnection loop
+        print("Looking for F0XX Controller...")
+        
+        device = find_foxx_controller()
+        
+        if device is None:
+            print("ERROR: F0XX Controller not found!")
+            print("Available devices:")
+            for dev in [evdev.InputDevice(path) for path in evdev.list_devices()]:
+                print(f"  - {dev.name}")
+            print("Retrying in 5 seconds...")
+            await asyncio.sleep(5)
+            continue
+        
+        print(f"Found F0XX Controller: {device.name}")
+        print(f"Device path: {device.path}")
+        print("Listening for button events...\n")
+        
+        try:
+            async for event in device.async_read_loop():
+                if event.type == evdev.ecodes.EV_KEY:
+                    if event.code in KEY_MAP:
+                        button = KEY_MAP[event.code]
+                        pressed = event.value == 1
+                        
+                        await broadcast_button_event(button, pressed)
+        except OSError as e:
+            if e.errno == 19:  # Device disconnected
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Controller disconnected! Attempting to reconnect...")
+                await asyncio.sleep(2)  # Wait before retrying
+            else:
+                print(f"Error reading from device: {e}")
+                await asyncio.sleep(2)
+        except Exception as e:
+            print(f"Error reading from device: {e}")
+            await asyncio.sleep(2)
 
 
 async def main():
