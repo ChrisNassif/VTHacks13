@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Controller Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            padding: 0 10px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: clamp(1.2rem, 4vw, 2rem);
+        }
+
+        .connection-status {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4444;
+            transition: background 0.3s;
+        }
+
+        .status-indicator.connected {
+            background: #44ff44;
+        }
+
+        .controller-container {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .controller {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            aspect-ratio: 16/9;
+            background: #2a2a2a;
+            border-radius: 0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .button {
+            position: absolute;
+            background: #444;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .button.pressed {
+            background: #00ff88;
+            box-shadow: 0 0 20px #00ff88, inset 0 2px 5px rgba(0, 255, 136, 0.5);
+        }
+
+        /* Center logo */
+        .center-logo {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12%;
+            max-width: 60px;
+            height: auto;
+            z-index: 10;
+        }
+
+        /* Arch buttons A-D */
+        .arch-buttons {
+            position: absolute;
+            right: 1%;
+            top: -8%;
+            width: 40%;
+            height: 50%;
+        }
+
+        .arch-buttons-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Arch buttons E-H */
+        .arch-buttons-2 {
+            position: absolute;
+            right: 1%;
+            top: 7%;
+            width: 40%;
+            height: 50%;
+        }
+
+        .arch-buttons-2-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Arch buttons I-L (left side) */
+        .arch-buttons-3 {
+            position: absolute;
+            left: 1%;
+            top: 5%;
+            width: 40%;
+            height: 50%;
+        }
+
+        .arch-buttons-3-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Center button M */
+        .center-button-container {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40%;
+            height: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .btn-m {
+            position: relative;
+            width: 20%;
+            aspect-ratio: 1;
+        }
+
+        .arch-btn {
+            width: 20%;
+            aspect-ratio: 1;
+        }
+
+        .btn-a {
+            position: absolute;
+            left: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .btn-b {
+            position: absolute;
+            left: 30%;
+            top: 25%;
+        }
+
+        .btn-c {
+            position: absolute;
+            right: 30%;
+            top: 25%;
+        }
+
+        .btn-d {
+            position: absolute;
+            right: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .btn-e {
+            position: absolute;
+            left: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .btn-f {
+            position: absolute;
+            left: 30%;
+            top: 25%;
+        }
+
+        .btn-g {
+            position: absolute;
+            right: 30%;
+            top: 25%;
+        }
+
+        .btn-h {
+            position: absolute;
+            right: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .btn-i {
+            position: absolute;
+            left: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .btn-j {
+            position: absolute;
+            left: 30%;
+            top: 25%;
+        }
+
+        .btn-k {
+            position: absolute;
+            right: 30%;
+            top: 25%;
+        }
+
+        .btn-l {
+            position: absolute;
+            right: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Bottom left buttons S-T */
+        .bottom-left-buttons {
+            position: absolute;
+            left: 20%;
+            bottom: 2%;
+            width: 40%;
+            height: 50%;
+            transform: rotate(40deg);
+        }
+
+        .btn-s {
+            position: absolute;
+            left: 22%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20%;
+            aspect-ratio: 1;
+        }
+
+        .btn-t {
+            position: absolute;
+            left: 44%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20%;
+            aspect-ratio: 1;
+        }
+
+        /* Pyramid buttons (bottom right) */
+        .pyramid-buttons {
+            position: absolute;
+            right: 25%;
+            bottom: 25%;
+            width: 25%;
+            height: 40%;
+            transform: rotate(-40deg);
+        }
+
+        .pyramid-buttons-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .pyramid-buttons .arch-btn {
+            width: 29%;
+        }
+
+        .btn-n {
+            position: absolute;
+            left: 5%;
+            bottom: 0;
+        }
+
+        .btn-o {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+        }
+
+        .btn-p {
+            position: absolute;
+            right: 5%; 
+            bottom: 0;
+        }
+
+        .btn-q {
+            position: absolute;
+            left: 20%; 
+            top: 40%; 
+        }
+
+        .btn-r {
+            position: absolute;
+            right: 20%; 
+            top: 40%; 
+        }
+
+        .button-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(8px, 2vw, 12px);
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+        }
+
+        .config-panel {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .config-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background: white;
+            color: #333;
+            width: 100%;
+            max-width: 300px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 8px 20px;
+            border-radius: 5px;
+            border: none;
+            background: #00ff88;
+            color: #1a1a1a;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        button:hover {
+            background: #00dd77;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; margin-bottom: 20px;">Game Controller Viewer</h1>
+        
+        <div class="config-panel">
+            <div class="config-group">
+                <input type="text" id="wsUrl" placeholder="ws://localhost:8080" value="ws://localhost:8080">
+                <button onclick="connectWebSocket()">Connect</button>
+                <button onclick="disconnectWebSocket()">Disconnect</button>
+            </div>
+        </div>
+
+        <div class="connection-status">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <span id="statusText">Disconnected</span>
+        </div>
+
+        <div class="controller-container">
+            <div class="controller">
+                <img src="assets/controller_middle_logo.png" alt="Logo" class="center-logo">
+                
+                <div class="arch-buttons">
+                    <div class="arch-buttons-inner">
+                        <div class="button arch-btn btn-a" data-button="a">
+                            <span class="button-label">A</span>
+                        </div>
+                        <div class="button arch-btn btn-b" data-button="b">
+                            <span class="button-label">B</span>
+                        </div>
+                        <div class="button arch-btn btn-c" data-button="c">
+                            <span class="button-label">C</span>
+                        </div>
+                        <div class="button arch-btn btn-d" data-button="d">
+                            <span class="button-label">D</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arch-buttons-2">
+                    <div class="arch-buttons-2-inner">
+                        <div class="button arch-btn btn-e" data-button="e">
+                            <span class="button-label">E</span>
+                        </div>
+                        <div class="button arch-btn btn-f" data-button="f">
+                            <span class="button-label">F</span>
+                        </div>
+                        <div class="button arch-btn btn-g" data-button="g">
+                            <span class="button-label">G</span>
+                        </div>
+                        <div class="button arch-btn btn-h" data-button="h">
+                            <span class="button-label">H</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arch-buttons-3">
+                    <div class="arch-buttons-3-inner">
+                        <div class="button arch-btn btn-i" data-button="i">
+                            <span class="button-label">I</span>
+                        </div>
+                        <div class="button arch-btn btn-j" data-button="j">
+                            <span class="button-label">J</span>
+                        </div>
+                        <div class="button arch-btn btn-k" data-button="k">
+                            <span class="button-label">K</span>
+                        </div>
+                        <div class="button arch-btn btn-l" data-button="l">
+                            <span class="button-label">L</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="center-button-container">
+                    <div class="button arch-btn btn-m" data-button="m">
+                        <span class="button-label">M</span>
+                    </div>
+                </div>
+
+                <div class="pyramid-buttons">
+                    <div class="pyramid-buttons-inner">
+                        <div class="button arch-btn btn-n" data-button="n">
+                            <span class="button-label">N</span>
+                        </div>
+                        <div class="button arch-btn btn-o" data-button="o">
+                            <span class="button-label">O</span>
+                        </div>
+                        <div class="button arch-btn btn-p" data-button="p">
+                            <span class="button-label">P</span>
+                        </div>
+                        <div class="button arch-btn btn-q" data-button="q">
+                            <span class="button-label">Q</span>
+                        </div>
+                        <div class="button arch-btn btn-r" data-button="r">
+                            <span class="button-label">R</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bottom-left-buttons">
+                    <div class="button btn-s" data-button="s">
+                        <span class="button-label">S</span>
+                    </div>
+                    <div class="button btn-t" data-button="t">
+                        <span class="button-label">T</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        const buttons = {};
+
+        // Store button elements
+        document.querySelectorAll('[data-button]').forEach(btn => {
+            buttons[btn.dataset.button] = btn;
+        });
+
+        function connectWebSocket() {
+            const url = document.getElementById('wsUrl').value;
+            
+            try {
+                ws = new WebSocket(url);
+                
+                ws.onopen = () => {
+                    updateStatus(true, 'Connected');
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleButtonPress(data);
+                    } catch (e) {
+                        console.error('Invalid JSON:', e);
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    updateStatus(false, 'Error');
+                };
+
+                ws.onclose = () => {
+                    updateStatus(false, 'Disconnected');
+                };
+            } catch (e) {
+                alert('Failed to connect: ' + e.message);
+            }
+        }
+
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function handleButtonPress(data) {
+            // Expected format: { button: "a", pressed: true }
+            // or { button: "a", state: true }
+            // or just { a: true, b: false, ... }
+            
+            if (data.button) {
+                const btn = buttons[data.button.toLowerCase()];
+                if (btn) {
+                    const isPressed = data.pressed || data.state;
+                    btn.classList.toggle('pressed', isPressed);
+                }
+            } else {
+                // Handle object with multiple buttons
+                Object.keys(data).forEach(key => {
+                    const btn = buttons[key.toLowerCase()];
+                    if (btn) {
+                        btn.classList.toggle('pressed', data[key]);
+                    }
+                });
+            }
+        }
+
+        function updateStatus(connected, text) {
+            document.getElementById('statusIndicator').classList.toggle('connected', connected);
+            document.getElementById('statusText').textContent = text;
+        }
+    </script>
+</body>
+</html>
