@@ -1,0 +1,18 @@
+obj-m += kernel_module_test.o
+
+PWD := $(CURDIR)
+BUILD := $(PWD)/build
+
+all:
+	$(MAKE) -C /lib/modules/$(shell uname -r)/build M=$(BUILD) src=$(PWD) modules
+
+clean:
+	$(MAKE) -C /lib/modules/$(shell uname -r)/build M=$(BUILD) src=$(PWD) clean
+
+
+load:
+	-@sudo rmmod kernel_module_test 2>/dev/null || true
+	sudo insmod $(BUILD)/kernel_module_test.ko
+
+unload:
+	-@sudo rmmod kernel_module_test 2>/dev/null || true

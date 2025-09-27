@@ -1,0 +1,1 @@
+savedcmd_/home/animated/Projects/vthacks_25/kernel_module_test/build/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/animated/Projects/vthacks_25/kernel_module_test/build/Module.symvers -T /home/animated/Projects/vthacks_25/kernel_module_test/build/modules.order -i Module.symvers -e 

@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/src/linux-headers-6.8.0-84-generic/include",
+                "/usr/src/linux-headers-6.8.0-84-generic/arch/x86/include", // Adjust arch if needed
+                "/usr/include",
+                "/usr/include/c++/11",                  // adjust to your GCC version
+                "/usr/include/x86_64-linux-gnu/c++/11"  // multilib location
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++", // Or your specific compiler
+            "cStandard": "c11",
+            "cppStandard": "c++23",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
