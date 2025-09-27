@@ -38,6 +38,15 @@ unsigned long CONTROLLER_BUTTON_TYPES[] = {
     BTN_A,
     BTN_B,
     BTN_C,
+
+    KEY_0,
+    KEY_1,
+    KEY_2,
+    KEY_3,
+    KEY_4,
+    KEY_5,
+    KEY_6,
+    KEY_7,
 };
 int NUMBER_OF_CONTROLLER_BUTTON_TYPES = sizeof(CONTROLLER_BUTTON_TYPES) / sizeof(unsigned long);
 
@@ -88,7 +97,7 @@ int setup_uinput() {
     struct uinput_setup usetup;
     memset(&usetup, 0, sizeof(usetup));
 
-    // Microsoft Xbox 360 Controller 
+    // Setup the F0XX Controller to look like a Microsoft Xbox 360 Controller 
     usetup.id.bustype = BUS_USB;
     usetup.id.vendor  = 0x045e;   
     usetup.id.product = 0x028e;
@@ -127,59 +136,54 @@ void sync_events(int ufd) {
 
 
 int main() {
-    try {
-        int uart_fd = setup_uart("/dev/F0XX");
-        // int uart_fd = setup_uart("/dev/ttyUSB0");
-        int uinput_fd = setup_uinput();
+    // int uart_fd = setup_uart("/dev/ttyUSB0");
 
-        int epfd = epoll_create1(0);
+    int uart_fd = setup_uart("/dev/F0XX");
+    int uinput_fd = setup_uinput();
 
-        if (epfd < 0) {
-            throw std::runtime_error("epoll_create failed");
-        }
+    int epfd = epoll_create1(0);
 
-        struct epoll_event ev;
-        ev.events = EPOLLIN;
-        ev.data.fd = uart_fd;
-        epoll_ctl(epfd, EPOLL_CTL_ADD, uart_fd, &ev);
+    if (epfd < 0) {
+        throw std::runtime_error("epoll_create failed");
+    }
+
+    struct epoll_event ev;
+    ev.events = EPOLLIN;
+    ev.data.fd = uart_fd;
+    epoll_ctl(epfd, EPOLL_CTL_ADD, uart_fd, &ev);
 
 
-        std::cout << "Driver running: press bytes over UART to control gamepad" << std::endl;
+    std::cout << "Driver running: press bytes over UART to control gamepad" << std::endl;
 
-        while (true) {
-            struct epoll_event events[1];
-            int n = epoll_wait(epfd, events, 1, -1);
+    while (true) {
+        struct epoll_event events[1];
+        int n = epoll_wait(epfd, events, 1, -1);
 
-            if (!(n > 0 && (events[0].events & EPOLLIN))) break;
-            
-            char uart_buffer[4];
-            int len = read(uart_fd, uart_buffer, sizeof(uart_buffer));
-            
-            // go through the UART bits and then send a key event if the bit was changed
-            for (int byte_index = 0; byte_index < 4; byte_index++) {
-                char changed_buttons = current_button_states[byte_index] ^ uart_buffer[byte_index];
+        if (!(n > 0 && (events[0].events & EPOLLIN))) break;
+        
+        char uart_buffer[4];
+        int len = read(uart_fd, uart_buffer, sizeof(uart_buffer));
+        
+        // go through the UART bits and then send a key event if the bit was changed
+        for (int byte_index = 0; byte_index < 4; byte_index++) {
+            char changed_buttons = current_button_states[byte_index] ^ uart_buffer[byte_index];
 
-                for (int bit_index = 0; bit_index < 8; bit_index++) {
-                    char mask = 1 << bit_index;
-                    
-                    if (changed_buttons & mask) {
-                        std::cout << "bits:" << uart_buffer << std::endl;
+            for (int bit_index = 0; bit_index < 8; bit_index++) {
+                char mask = 1 << bit_index;
+                
+                if (changed_buttons & mask) {
+                    std::cout << "bits:" << uart_buffer << std::endl;
 
-                        send_event(uinput_fd, EV_KEY, CONTROLLER_BUTTON_TYPES[byte_index * 8 + bit_index], current_button_states[byte_index] & mask);
-                        sync_events(uinput_fd);
-                    }
+                    send_event(uinput_fd, EV_KEY, CONTROLLER_BUTTON_TYPES[byte_index * 8 + bit_index], current_button_states[byte_index] & mask);
+                    sync_events(uinput_fd);
                 }
             }
-            
         }
-
-        ioctl(uinput_fd, UI_DEV_DESTROY);
-        close(uinput_fd);
-        close(uart_fd);
-    } 
-    
-    catch (std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
+        
     }
+
+    ioctl(uinput_fd, UI_DEV_DESTROY);
+    close(uinput_fd);
+    close(uart_fd);
+
 }
