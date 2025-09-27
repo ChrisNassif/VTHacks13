@@ -1,2 +1,5 @@
 all:
-	sudo g++ -Ofast user_space_module_test.cpp -o /usr/bin/user_space_module_test.o
+	sudo g++ -Ofast foxx_driver.cpp -o /usr/bin/foxx_driver.o
+
+test:
+	sudo g++ -Ofast foxx_test_driver.cpp -o /usr/bin/foxx_test_driver.o
