@@ -6,13 +6,10 @@
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
-#include <thread>
 
 
 
-
-// stores all of the current button states (1 for pressed, 0 for not pressed)
-// each bit is an individual value
+// stores all of the current
 char current_button_states[4] = {};
 
 
@@ -56,12 +53,6 @@ unsigned long CONTROLLER_BUTTON_TYPES[32] = {
 int NUMBER_OF_CONTROLLER_BUTTON_TYPES = sizeof(CONTROLLER_BUTTON_TYPES) / sizeof(unsigned long);
 
 
-bool is_file_descriptor_open(int fd) {
-    if (fcntl(fd, F_GETFL) == -1) {
-        return errno != EBADF; 
-    }
-    return true;
-}
 
 
 int setup_uart(const char* device_file_path) {
@@ -165,61 +156,42 @@ int main() {
 
 
     std::cout << "Driver running: press bytes over UART to control gamepad" << std::endl;
+    
+    while (true) {
+        struct epoll_event events[1];
 
-    try {
-        while (true) {
-            struct epoll_event events[1];
+        int n = epoll_wait(epfd, events, 1, -1);
 
-            int n = epoll_wait(epfd, events, 1, 1000);
-            
-            if (!is_file_descriptor_open(uart_fd)) {
-                throw std::runtime_error("Device Disconnected");
-            }
-
-            if (!(n > 0 && (events[0].events & EPOLLIN))) break;
-            
-            char uart_buffer[4];
-            int len = read(uart_fd, uart_buffer, sizeof(uart_buffer));
-            
-            if (len == 0) {
-                throw std::runtime_error("Device Disconnected");
-            }
-            
-            std::cout << "num:" << len << std::endl;
+        if (!(n > 0 && (events[0].events & EPOLLIN))) break;
         
-            for (int i = 0; i < len; i++) {
-                std::cout << "byte[" << i << "] = " 
-                        << static_cast<int>(static_cast<unsigned char>(uart_buffer[i])) 
-                        << std::endl;
-            }
+        char uart_buffer[4];
+        int len = read(uart_fd, uart_buffer, sizeof(uart_buffer));
+        // std::cout << "num:" << len << std::endl;
+        
+        // for (int i = 0; i < len; i++) {
+        //     std::cout << "byte[" << i << "] = " 
+        //             << static_cast<int>(static_cast<unsigned char>(uart_buffer[i])) 
+        //             << std::endl;
+        // }
 
+        // go through the UART bits and then send a key event if the bit was changed
+        for (int byte_index = 0; byte_index < 4; byte_index++) {
+            char changed_buttons = current_button_states[byte_index] ^ uart_buffer[byte_index];
 
-            // go through the UART bits and then send a key event if the bit was changed
-            for (int byte_index = 0; byte_index < 4; byte_index++) {
-                char changed_buttons = current_button_states[byte_index] ^ uart_buffer[byte_index];
+            for (int bit_index = 0; bit_index < 8; bit_index++) {
+                char mask = 1 << bit_index;
 
-                for (int bit_index = 0; bit_index < 8; bit_index++) {
-                    char mask = 1 << bit_index;
+                if (changed_buttons & mask) {
+                    std::cout << "hi: " << (current_button_states[byte_index] & mask) << std::endl;
+                    send_event(uinput_fd, EV_KEY, CONTROLLER_BUTTON_TYPES[byte_index * 8 + bit_index], uart_buffer[byte_index] & mask);
+                    sync_events(uinput_fd);
 
-                    if (changed_buttons & mask) {
-                        std::cout << "hi: " << (current_button_states[byte_index] & mask) << std::endl;
-                        send_event(uinput_fd, EV_KEY, CONTROLLER_BUTTON_TYPES[byte_index * 8 + bit_index], uart_buffer[byte_index] & mask);
-                        sync_events(uinput_fd);
-
-                        current_button_states[byte_index] = uart_buffer[byte_index];
-                    }
+                    current_button_states[byte_index] = uart_buffer[byte_index];
                 }
             }
-            
         }
+        
     }
-
-    catch (std::runtime_error e) {
-        ioctl(uinput_fd, UI_DEV_DESTROY);
-        close(uinput_fd);
-        close(uart_fd);
-    } 
-
 
     ioctl(uinput_fd, UI_DEV_DESTROY);
     close(uinput_fd);
