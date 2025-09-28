@@ -497,6 +497,7 @@
     <script>
         let ws = null;
         const buttons = {};
+        const buttonTimeouts = {};
 
         // Store button elements
         document.querySelectorAll('[data-button]').forEach(btn => {
@@ -549,15 +550,29 @@
                 const btn = buttons[data.button.toLowerCase()];
                 if (btn) {
                     const isPressed = data.pressed || data.state;
-                    btn.classList.toggle('pressed', isPressed);
+                    setButtonState(btn, data.button.toLowerCase(), isPressed);
                 }
             } else {
                 Object.keys(data).forEach(key => {
                     const btn = buttons[key.toLowerCase()];
                     if (btn) {
-                        btn.classList.toggle('pressed', data[key]);
+                        setButtonState(btn, key.toLowerCase(), data[key]);
                     }
                 });
+            }
+        }
+
+        function setButtonState(btn, key, isPressed) {
+            btn.classList.toggle('pressed', isPressed);
+
+            // clear any existing timeout
+            if (buttonTimeouts[key]) clearTimeout(buttonTimeouts[key]);
+
+            if (isPressed) {
+                buttonTimeouts[key] = setTimeout(() => {
+                    btn.classList.remove('pressed');
+                    buttonTimeouts[key] = null;
+                }, 10);
             }
         }
 
@@ -570,7 +585,12 @@
             Object.values(buttons).forEach(btn => {
                 btn.classList.remove('pressed');
             });
+            Object.keys(buttonTimeouts).forEach(k => {
+                clearTimeout(buttonTimeouts[k]);
+                buttonTimeouts[k] = null;
+            });
         }
+
     </script>
 </body>
 
