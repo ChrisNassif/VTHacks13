@@ -1,0 +1,15 @@
+[Unit]
+Description=Game Controller WebSocket Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/animated/Projects/vthacks_25/kernel_module_test/web_controller
+ExecStart=/home/animated/miniconda3/bin/python3 /home/animated/Projects/vthacks_25/kernel_module_test/web_controller/server.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

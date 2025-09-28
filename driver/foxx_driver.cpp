@@ -185,7 +185,7 @@ int main() {
                 throw std::runtime_error("Device Disconnected");
             }
             
-            std::cout << "num:" << len << std::endl;
+            // std::cout << "num:" << len << std::endl;
         
             for (int i = 0; i < len; i++) {
                 std::cout << "byte[" << i << "] = " 
@@ -201,9 +201,8 @@ int main() {
                 for (int bit_index = 0; bit_index < 8; bit_index++) {
                     char mask = 1 << bit_index;
 
-                    if (changed_buttons & mask) {
-                        std::cout << "hi: " << (current_button_states[byte_index] & mask) << std::endl;
-                        send_event(uinput_fd, EV_KEY, CONTROLLER_BUTTON_TYPES[byte_index * 8 + bit_index], uart_buffer[byte_index] & mask);
+                    if ((changed_buttons & mask) && (byte_index * 8 + bit_index < 20)) {
+                        send_event(uinput_fd, EV_KEY, CONTROLLER_BUTTON_TYPES[byte_index * 8 + bit_index], (uart_buffer[byte_index] & mask) >> bit_index);
                         sync_events(uinput_fd);
 
                         current_button_states[byte_index] = uart_buffer[byte_index];
