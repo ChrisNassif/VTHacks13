@@ -35,3 +35,6 @@ clean:
 	sudo rm -f $(BIN_DIR)/foxx_test_driver.o
 	sudo rm -f $(SERVICE_DIR)/foxx-driver.service
 	sudo systemctl disable --now foxx-driver.service || true
+
+status:
+	sudo systemctl status foxx-driver.service
