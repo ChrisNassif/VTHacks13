@@ -563,17 +563,15 @@
         }
 
         function setButtonState(btn, key, isPressed) {
+            // Apply the pressed state immediately
             btn.classList.toggle('pressed', isPressed);
 
-            // clear any existing timeout
             if (buttonTimeouts[key]) clearTimeout(buttonTimeouts[key]);
 
-            if (isPressed) {
-                buttonTimeouts[key] = setTimeout(() => {
-                    btn.classList.remove('pressed');
-                    buttonTimeouts[key] = null;
-                }, 10);
-            }
+            buttonTimeouts[key] = setTimeout(() => {
+                btn.classList.remove('pressed');
+                buttonTimeouts[key] = null;
+            }, 6);
         }
 
         function updateStatus(connected, text) {
