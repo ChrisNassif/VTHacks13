@@ -13,7 +13,7 @@ clean:
 	done
 
 status:
-	@$(MAKE) -C web_controller status
+	@$(MAKE) -C game-controller status
 	@$(MAKE) -C driver status || true
 
 server:
