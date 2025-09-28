@@ -1,5 +1,23 @@
-all:
-	sudo g++ -Ofast foxx_driver.cpp -o /usr/bin/foxx_driver.o
+SUBDIRS := driver web_controller
 
-test:
-	sudo g++ -Ofast foxx_test_driver.cpp -o /usr/bin/foxx_test_driver.o
+.PHONY: all install clean status server open
+
+install:
+	@for dir in $(SUBDIRS); do \
+		$(MAKE) -C $$dir install; \
+	done
+
+clean:
+	@for dir in $(SUBDIRS); do \
+		$(MAKE) -C $$dir clean; \
+	done
+
+status:
+	@$(MAKE) -C web_controller status
+	@$(MAKE) -C driver status || true
+
+server:
+	@$(MAKE) -C web_controller server
+
+open:
+	@$(MAKE) -C web_controller open

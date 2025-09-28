@@ -7,7 +7,10 @@ all:
 test:
 	sudo g++ -Ofast foxx_test_driver.cpp -o $(BIN_DIR)/foxx_test_driver.o
 
-install: all
+setup: 
+	sudo bash setup.bash
+
+install: setup all
 	echo "[*] Installing systemd service..."
 	echo "[Unit]"                                    | sudo tee $(SERVICE_DIR)/foxx-driver.service
 	echo "Description=F0XX Game Controller Driver"  | sudo tee -a $(SERVICE_DIR)/foxx-driver.service
@@ -32,3 +35,6 @@ clean:
 	sudo rm -f $(BIN_DIR)/foxx_test_driver.o
 	sudo rm -f $(SERVICE_DIR)/foxx-driver.service
 	sudo systemctl disable --now foxx-driver.service || true
+
+status:
+	sudo systemctl status foxx-driver.service
