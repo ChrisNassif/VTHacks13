@@ -1,0 +1,41 @@
+module top_level (
+    input wire CLOCK_50,
+    input wire [3:0] KEY,
+    input wire [9:0] SW,
+    output wire [9:0] LEDR,
+    inout wire GPIO_0_D0   // Connect to UART TX pin
+);
+
+    wire rst_n = KEY[0];
+    
+    // Example 32-bit array (you can modify this)
+    wire [31:0] test_array [0:7];
+    assign test_array[0] = {SW, SW, SW, 2'b00};
+    assign test_array[1] = 32'h12345678;
+    assign test_array[2] = 32'hABCDEF00;
+    assign test_array[3] = 32'hDEADBEEF;
+    assign test_array[4] = 32'hCAFEBABE;
+    assign test_array[5] = 32'h55AA55AA;
+    assign test_array[6] = 32'hFFFFFFFF;
+    assign test_array[7] = 32'h00000000;
+    
+    // Send trigger (button press)
+    wire send_trigger = ~KEY[1];  // Active low button
+    wire busy;
+    
+    assign LEDR[0] = busy;
+    
+    array_uart_transmitter #(
+        .CLOCK_FREQ(50_000_000),
+        .BAUD_RATE(115200),
+        .ARRAY_SIZE(8)
+    ) transmitter (
+        .clk(CLOCK_50),
+        .rst_n(rst_n),
+        .data_array(test_array),
+        .send_trigger(send_trigger),
+        .uart_tx(GPIO_0_D0),
+        .busy(busy)
+    );
+
+endmodule

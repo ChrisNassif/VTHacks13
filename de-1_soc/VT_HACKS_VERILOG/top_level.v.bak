@@ -1,0 +1,43 @@
+module top_level (
+    // 50MHz clock
+    input CLOCK_50,
+    
+    // Buttons and switches  
+    input [3:0] KEY,
+    input [9:0] SW,
+    output [9:0] LEDR,
+    
+    // HPS UART pins (these are hardwired on DE1-SoC)
+    output HPS_UART_TX,
+    input HPS_UART_RX
+);
+
+    // Instantiate your generated Platform Designer system
+    uart_system u0 (
+        .clk_clk(CLOCK_50),                    // Connect 50MHz clock
+        .reset_reset_n(KEY[0]),                // Use KEY[0] as reset (active low)
+        .key_0_export(KEY[0]),                 // Connect KEY[0] to PIO
+        .hps_uart_rx(HPS_UART_RX),            // HPS UART connections
+        .hps_uart_tx(HPS_UART_TX),
+        .memory_mem_a(),                       // HPS DDR3 connections (leave unconnected for now)
+        .memory_mem_ba(),
+        .memory_mem_ck(),
+        .memory_mem_ck_n(),
+        .memory_mem_cke(),
+        .memory_mem_cs_n(),
+        .memory_mem_ras_n(),
+        .memory_mem_cas_n(),
+        .memory_mem_we_n(),
+        .memory_mem_reset_n(),
+        .memory_mem_dq(),
+        .memory_mem_dqs(),
+        .memory_mem_dqs_n(),
+        .memory_mem_odt(),
+        .memory_mem_dm(),
+        .memory_oct_rzqin()
+    );
+
+    // Simple LED indicator
+    assign LEDR[0] = ~KEY[0];  // LED on when button pressed
+
+endmodule

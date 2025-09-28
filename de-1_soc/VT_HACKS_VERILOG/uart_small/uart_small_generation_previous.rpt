@@ -1,0 +1,27 @@
+Info: Starting: Create HDL design files for synthesis
+Info: qsys-generate C:\1_SENIOR_FALL\VT_HACKS\VT_HACKS_VERILOG\uart_small.qsys --synthesis=VERILOG --output-directory=C:\1_SENIOR_FALL\VT_HACKS\VT_HACKS_VERILOG\uart_small\synthesis --family="Cyclone V" --part=5CSEMA5F31C6
+Progress: Loading VT_HACKS_VERILOG/uart_small.qsys
+Progress: Reading input file
+Progress: Adding clk_0 [clock_source 23.1]
+Progress: Parameterizing module clk_0
+Progress: Adding hps_0 [altera_hps 23.1]
+Progress: Parameterizing module hps_0
+Progress: Adding pio_0 [altera_avalon_pio 23.1]
+Progress: Parameterizing module pio_0
+Progress: Building connections
+Progress: Parameterizing connections
+Progress: Validating
+Progress: Done reading input file
+Info: uart_small.hps_0: HPS Main PLL counter settings: n = 0  m = 73
+Info: uart_small.hps_0: HPS peripherial PLL counter settings: n = 0  m = 39
+Warning: uart_small.hps_0: "Configuration/HPS-to-FPGA user 0 clock frequency" (desired_cfg_clk_mhz) requested 100.0 MHz, but only achieved 97.368421 MHz
+Warning: uart_small.hps_0: 1 or more output clock frequencies cannot be achieved precisely, consider revising desired output clock frequencies.
+Warning: uart_small.hps_0: ODT is disabled. Enabling ODT (Mode Register 1) may improve signal integrity
+Info: uart_small.pio_0: PIO inputs are not hardwired in test bench. Undefined values will be read from PIO inputs during simulation.
+Warning: uart_small.pio_0: pio_0.external_connection must be exported, or connected to a matching conduit.
+Info: uart_small: Generating uart_small "uart_small" for QUARTUS_SYNTH
+Info: Interconnect is inserted between master hps_0.h2f_lw_axi_master and slave pio_0.s1 because the master is of type axi and the slave is of type avalon.
+Error: Generation stopped, 5 or more modules remaining
+Info: uart_small: Done "uart_small" with 5 modules, 1 files
+Error: qsys-generate failed with exit code 1: 1 Error, 4 Warnings
+Info: Stopping: Create HDL design files for synthesis
