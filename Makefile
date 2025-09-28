@@ -12,10 +12,6 @@ clean:
 		$(MAKE) -C $$dir clean; \
 	done
 
-status:
-	@$(MAKE) -C web_controller status
-	@$(MAKE) -C driver status || true
-
 server:
 	@$(MAKE) -C web_controller server
 

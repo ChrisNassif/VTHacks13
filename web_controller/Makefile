@@ -73,10 +73,6 @@ install: $(SERVICE_FILE)
 	@echo "Service installed, enabled, and started!"
 	@echo "Run 'make status' to check service status"
 
-# Check service status
-status:
-	@sudo systemctl status $(SERVICE_NAME).service
-
 # Clean up - remove service and generated files
 clean:
 	@echo "Cleaning up..."
