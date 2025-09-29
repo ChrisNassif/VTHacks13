@@ -66,7 +66,7 @@ void updateButtonFSM(int buttonIndex, bool rawReading) {
           buttonFSM[buttonIndex] = NOT_PRESSED;
           int byteIndex = buttonIndex / 8;
           int bitIndex = buttonIndex % 8;
-          buttonStates[byteIndex] &= dccccccccc~(1 << bitIndex);
+          buttonStates[byteIndex] &= ~(1 << bitIndex);
         }
       } else {  
         buttonFSM[buttonIndex] = PRESSED;
